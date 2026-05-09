@@ -23,7 +23,12 @@ app.use((err, req, res,next) => {
     res.status(500).json({ message: 'Something went wrong on our end!' });
 });
 
-module.exports = app;
+// --- 5. START THE SERVER ---
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`🚀 API is running and listening on port ${PORT}`);
+});
 
 
 

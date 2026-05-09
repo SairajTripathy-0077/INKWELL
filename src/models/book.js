@@ -35,3 +35,5 @@ const bookSchema = new mongoose.Schema({
 }, {
     timestamps: true // Industrial Standard: Automatically adds 'createdAt' and 'updatedAt' fields
 });
+
+module.exports = mongoose.model('Book', bookSchema);
