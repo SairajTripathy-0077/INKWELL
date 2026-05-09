@@ -11,11 +11,12 @@ app.use(express.json());
 
 //database connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('connected to mongodb'))
-    .catch((err) => console.error('Database not connected',err));
+    .then(() => console.log('connected to mongodb 👌🏻'))
+    .catch((err) => console.error('Database not connected 🤚🏻',err));
 
 //routes
-
+const bookRoutes = require('../src/routes/bookRoutes');
+app.use('/books', bookRoutes);
 //global error handler
 app.use((err, req, res,next) => {
     console.error(err.stack);
