@@ -17,6 +17,7 @@ mongoose.connect(process.env.MONGO_URI)
 //routes
 const bookRoutes = require('../src/routes/bookRoutes');
 app.use('/books', bookRoutes);
+
 //global error handler
 app.use((err, req, res,next) => {
     console.error(err.stack);
