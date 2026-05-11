@@ -18,7 +18,7 @@ exports.createBook = async(req , res) => {
 
 exports.getAllBook = async(req, res) => {
     try {
-        const books = await Book.find();
+        const books = await Book.find(req.query);
 
         res.status(200).json({
             success: true,
@@ -92,5 +92,43 @@ exports.deleteBook = async (req,res) => {
             success: false,
             message: error.message
         });
+    }
+}
+
+exports.getInsight = async(req, res) => {
+    try {
+        //pipeline 1: calculate total books and avg rating
+        const stats = await Book.aggregate([
+            {
+                $group: {
+                    _id: null, // We use null because we want to group EVERYTHING together
+                    totalBooks: { $sum: 1 }, // Add 1 for every document found
+                    averageRating: { $avg: "$rating" } // Calculate the average of the 'rating' field
+                }
+            }
+        ]);
+        //pipeline 2: Find most read genre
+        const popularGenre = await Book.aggregate([
+            {
+                $group: {
+                    _id: "$genre",
+                    count: {$sum: 1}
+                }
+            },
+            {$sort : {count: -1}},
+            {$limit: 1}
+        ]);
+        res.status(200).json({
+            success: true,
+            data: {
+                totalBooks: stats.length > 0 ? stats[0].totalBooks : 0, // If stats is empty, we return 0
+                averageRating: stats.length > 0 ? Math.round(stats[0].averageRating *10)/10 : 0,
+                topGenre: popularGenre.length > 0 ? popularGenre[0]._id : "None"
+
+            }
+        });
+    } catch (error) {
+        console.error("🔍 INSIGHTS ERROR:", error);
+        res.status(500).json({ success: false, message: error.message });
     }
 }

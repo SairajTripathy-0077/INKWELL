@@ -18,6 +18,10 @@ mongoose.connect(process.env.MONGO_URI)
 const bookRoutes = require('../src/routes/bookRoutes');
 app.use('/books', bookRoutes);
 
+//insights route
+const { getInsight } = require('../src/controllers/bookController');
+app.get('/insights', getInsight);
+
 //global error handler
 app.use((err, req, res,next) => {
     console.error(err.stack);
