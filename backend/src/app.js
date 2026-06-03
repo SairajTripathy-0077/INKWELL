@@ -16,6 +16,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 //routes
 const bookRoutes = require('../src/routes/bookRoutes');
+const authRoutes = require('./routes/authRoutes');
+app.use('/auth', authRoutes);
 app.use('/books', bookRoutes);
 
 //insights route

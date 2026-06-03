@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inkwell OS // VCR Edition</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #050505; /* Off-black TV bezel */
+            font-family: 'VT323', monospace;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The actual TV Screen Area */
+        #vcr-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 800px;
+            background-color: #0000aa; /* Classic VCR Blue */
+            display: none;
+            flex-direction: column;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            border: 10px solid #111;
+            border-radius: 20px;
+        }
+
+        /* VCR OSD (On-Screen Display) Text */
+        .vcr-text {
+            position: absolute;
+            font-size: 3rem;
+            text-transform: uppercase;
+            z-index: 20;
+        }
+        .vcr-play { top: 40px; left: 50px; }
+        .vcr-time { bottom: 40px; left: 50px; }
+        .vcr-mode { bottom: 40px; right: 50px; }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 90;
+        }
+
+        /* Windows 95 Style Login Modal */
+        #login-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 50; display: none;
+        }
+
+        .win-window {
+            background: #c0c0c0;
+            border: 2px solid; border-color: #dfdfdf #000000 #000000 #dfdfdf;
+            width: 380px; color: #000;
+            font-family: 'Courier New', Courier, monospace; /* System font feel */
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.8);
+            text-shadow: none;
+        }
+
+        .win-titlebar {
+            background: #000080; color: #fff;
+            padding: 4px 6px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .win-content { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .win-field { display: flex; flex-direction: column; font-weight: bold; }
+        
+        .win-input {
+            border: 2px solid; border-color: #000000 #dfdfdf #dfdfdf #000000;
+            padding: 6px; background: #fff; font-family: inherit; font-size: 16px;
+        }
+
+        .win-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
+        .win-btn {
+            background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000000 #000000 #dfdfdf;
+            padding: 6px 20px; font-family: inherit; font-weight: bold; cursor: pointer;
+        }
+        .win-btn:active { border-color: #000000 #dfdfdf #dfdfdf #000000; padding: 7px 19px 5px 21px; }
+
+        /* Dashboard Inside TV */
+        #dashboard {
+            display: none; padding: 80px 50px; z-index: 10;
+            position: relative; height: 100%; box-sizing: border-box;
+        }
+
+        .dash-header { font-size: 3rem; border-bottom: 2px solid #fff; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .retro-input-group { margin-bottom: 30px; display: flex; gap: 10px; }
+        .retro-input {
+            background: rgba(0,0,0,0.5); color: #fff; border: 2px solid #fff;
+            padding: 10px; font-family: 'VT323', monospace; font-size: 1.5rem; text-transform: uppercase;
+        }
+        .retro-btn {
+            background: #fff; color: #0000aa; border: 2px solid #fff;
+            padding: 10px 20px; font-family: 'VT323', monospace; font-size: 1.5rem; cursor: pointer; font-weight: bold;
+        }
+        .retro-btn:hover { background: #0000aa; color: #fff; }
+
+        .retro-table { width: 100%; border-collapse: collapse; font-size: 1.8rem; background: rgba(0,0,0,0.3); }
+        .retro-table th, .retro-table td { border: 2px solid #fff; padding: 12px; text-align: left; }
+
+        /* The initial power button */
+        #power-btn {
+            background: #333; color: #0f0; border: 4px solid #555;
+            padding: 15px 30px; font-size: 2rem; font-family: monospace;
+            cursor: pointer; border-radius: 10px; box-shadow: 0 0 15px #0f0;
+        }
+        #power-btn:hover { background: #0f0; color: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="power-container">
+        <button id="power-btn" onclick="bootTV()">POWER ON</button>
+    </div>
+
+    <div id="vcr-screen">
+        <div class="scanlines"></div>
+        
+        <div class="vcr-text vcr-play" id="play-text">PLAY &#9654;</div>
+        <div class="vcr-text vcr-time" id="time-text">0:00:00</div>
+        <div class="vcr-text vcr-mode">SP</div>
+
+        <div id="login-modal">
+            <div class="win-window">
+                <div class="win-titlebar">
+                    <span>Logon to Inkwell OS</span>
+                    <span style="background:#c0c0c0; color:#000; border:1px outset #fff; padding:0 3px; cursor:pointer;">X</span>
+                </div>
+                <div class="win-content">
+                    <p style="margin:0; font-size:14px;">Enter a user name and password to access your library database.</p>
+                    <div class="win-field">
+                        <label>User name:</label>
+                        <input type="text" class="win-input" id="username">
+                    </div>
+                    <div class="win-field">
+                        <label>Password:</label>
+                        <input type="password" class="win-input" id="password">
+                    </div>
+                    <div class="win-buttons">
+                        <button class="win-btn" onclick="processLogin()">OK</button>
+                        <button class="win-btn" onclick="alert('Initiating Registration...')">Sign Up</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboard">
+            <div class="dash-header">INKWELL.EXE // SECURE TERMINAL</div>
+            <p style="font-size: 1.5rem;">Welcome back, <span id="user-display" style="color: #0f0;">USER</span>. Awaiting input...</p>
+            
+            <div class="retro-input-group">
+                <input type="text" class="retro-input" placeholder="TITLE">
+                <input type="text" class="retro-input" placeholder="AUTHOR">
+                <select class="retro-input">
+                    <option>Plan to Read</option>
+                    <option>Reading</option>
+                    <option>Finished</option>
+                </select>
+                <button class="retro-btn">[ LOG DATA ]</button>
+            </div>
+
+            <table class="retro-table">
+                <thead>
+                    <tr>
+                        <th>TITLE</th>
+                        <th>AUTHOR</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+                <tbody id="book-list">
+                    <tr><td>Neuromancer</td><td>William Gibson</td><td>FINISHED</td></tr>
+                    <tr><td>Snow Crash</td><td>Neal Stephenson</td><td>READING</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. TV BOOT SEQUENCE ---
+        function bootTV() {
+            document.getElementById('power-container').style.display = 'none';
+            document.getElementById('vcr-screen').style.display = 'flex';
+            
+            // Wait 2 seconds (simulating TV warming up) before showing login
+            setTimeout(() => {
+                document.getElementById('login-modal').style.display = 'flex';
+            }, 2000);
+        }
+
+        // --- 2. LOGIN SEQUENCE ---
+        function processLogin() {
+            const user = document.getElementById('username').value || 'GUEST';
+            document.getElementById('user-display').innerText = user.toUpperCase();
+            
+            // Hide Windows Login, Show VCR Dashboard
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('play-text').style.display = 'none'; // Hide "PLAY"
+            document.getElementById('dashboard').style.display = 'block';
+            
+            // *LATER:* This is where you will add your `fetch('http://localhost:3000/auth/login')`
+            // and `fetch('http://localhost:3000/books')` code to get real data!
+        }
+
+        // --- 3. VCR AESTHETIC EFFECTS ---
+        // Blinking PLAY text
+        setInterval(() => {
+            const playText = document.getElementById('play-text');
+            if (playText.style.display !== 'none') {
+                playText.style.visibility = playText.style.visibility === 'hidden' ? 'visible' : 'hidden';
+            }
+        }, 800);
+
+        // Running Time counter (0:00:00 style)
+        let seconds = 0;
+        setInterval(() => {
+            seconds++;
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            const formatted = `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('time-text').innerText = formatted;
+        }, 1000);
+    </script>
+</body>
+</html>

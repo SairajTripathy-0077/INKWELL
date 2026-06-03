@@ -31,6 +31,11 @@ const bookSchema = new mongoose.Schema({
         type: String, 
         maxLength: [500, 'Review cannot exceed 500 characters'], 
         trim: true 
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     }
 }, {
     timestamps: true // Industrial Standard: Automatically adds 'createdAt' and 'updatedAt' fields
