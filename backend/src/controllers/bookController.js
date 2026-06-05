@@ -2,6 +2,7 @@ const Book = require('../models/book');
 
 exports.createBook = async(req , res) => {
     try {
+        req.body.user = req.user.id;
         const newBook = await Book.create(req.body);
         // 201 is the standard HTTP status code for "Created"
         res.status(201).json({

@@ -13,7 +13,6 @@ const bookSchema = new mongoose.Schema({
     },
     genre: { 
         type: String, 
-        required: [true, 'Genre is required'],
         lowercase: true // Standardizes all genres (e.g., "FICTION" becomes "fiction")
     },
     rating: { 
@@ -24,8 +23,8 @@ const bookSchema = new mongoose.Schema({
     },
     status: { 
         type: String, 
-        enum: ['Plan to Read', 'Reading', 'Finished'], // The data MUST be one of these exact strings
-        default: 'Plan to Read' 
+        enum: ['PLAN TO READ', 'READING', 'FINISHED'], // The data MUST be one of these exact strings
+        default: 'PLAN TO READ'
     },
     review: { 
         type: String, 

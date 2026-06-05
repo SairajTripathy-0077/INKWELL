@@ -12,7 +12,7 @@ exports.registerUser = async (req, res) => {
         const { username, password } = req.body;
 
         const UserExists = await User.findOne({ username });
-        if (userExists) {
+        if (UserExists) {
             return res.status(400).json({
                 success: false,
                 message: 'Username is already taken'

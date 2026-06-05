@@ -1,72 +1,152 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 
 interface Book {
-    _id: string;
-    title: string;
-    author: string;
-    status: string;
+  _id: string;
+  title: string;
+  author: string;
+  status: string;
 }
 
 export default function Dashboard({ token }: { token: string }) {
-    const [books, setBooks] = useState<Book[]>([]);
-    const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchBooks = async () => {
-            setLoading(true);
-            try {
-                const res = await api.getBooks(token);
-                if (res.success) {
-                    setBooks(res.data);
-                }
-            } catch (err) {
-                console.error("Error fetching books:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchBooks();
-    }, [token]);
+  // Form State
+  const [newTitle, setNewTitle] = useState("");
+  const [newAuthor, setNewAuthor] = useState("");
+  const [newStatus, setNewStatus] = useState("PLAN TO READ");
 
-    return (
-        <div className="p-12 z-10 relative h-full flex flex-col">
-            <h1 className="text-5xl border-b-2 border-white pb-2 mb-8">
-                INKWELL.EXE 
-            </h1>
+  // Fetch books on load (Memorized!)
+  const fetchBooks = useCallback(async () => {
+    try {
+      const res = await api.getBooks(token);
+      if (res.success) {
+        setBooks(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch books", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]); 
 
-            {loading ? (
-                <p className="text-3xl animate-pulse">FETCHING DATA...</p>
-            ) : (
-                <table className="w-full text-2xl bg-black/40 border-collapse">
-                <thead>
-                    <tr>
-                    <th className="border-2 border-white p-3 text-left">TITLE</th>
-                    <th className="border-2 border-white p-3 text-left">AUTHOR</th>
-                    <th className="border-2 border-white p-3 text-left">STATUS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {books.length === 0 ? (
-                    <tr>
-                        <td colSpan={3} className="border-2 border-white p-3 text-center text-zinc-500">
-                        NO DATA FOUND IN DATABASE.
-                        </td>
-                    </tr>
-                    ) : (
-                    books.map((book) => (
-                        <tr key={book._id} className="hover:bg-blue-800 transition-colors">
-                        <td className="border-2 border-white p-3 uppercase">{book.title}</td>
-                        <td className="border-2 border-white p-3 uppercase">{book.author}</td>
-                        <td className="border-2 border-white p-3 uppercase">{book.status}</td>
-                        </tr>
-                    ))
-                    )}
-                </tbody>
-                </table>
-            )}
+  useEffect(() => {
+    (async () => {
+      await fetchBooks();
+    })();
+  }, [fetchBooks]);
+
+  // --- NEW FEATURES ---
+
+  const handleAddBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle || !newAuthor) return;
+    
+    const res = await api.createBook(token, newTitle, newAuthor, newStatus);
+    if (res.success) {
+      setNewTitle("");
+      setNewAuthor("");
+      setNewStatus("PLAN TO READ");
+      fetchBooks(); // Refresh the list
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const res = await api.deleteBook(token, id);
+    if (res.success) fetchBooks(); // Refresh the list
+  };
+
+  const handleCycleStatus = async (id: string, currentStatus: string) => {
+    // Cycle through statuses
+    let nextStatus = "PLAN TO READ";
+    if (currentStatus === "PLAN TO READ") nextStatus = "READING";
+    if (currentStatus === "READING") nextStatus = "FINISHED";
+
+    const res = await api.updateBook(token, id, nextStatus);
+    if (res.success) fetchBooks(); // Refresh the list
+  };
+
+  return (
+    <div className="p-8 z-10 relative h-full flex flex-col font-sans">
+      <div className="flex justify-between items-end border-b-2 border-white pb-2 mb-6">
+        <h1 className="text-4xl tracking-widest uppercase">INKWELL.EXE</h1>
+        <button onClick={() => window.location.reload()} className="bg-red-700 text-white px-4 py-1 font-bold border-2 border-white hover:bg-red-500 active:bg-white active:text-black">
+          LOGOUT
+        </button>
+      </div>
+
+      {/* NEW ENTRY FORM */}
+      <form onSubmit={handleAddBook} className="flex gap-4 mb-8 bg-black/40 p-4 border-2 border-zinc-500">
+        <div className="flex flex-col flex-1 gap-1">
+          <label className="text-sm tracking-widest text-zinc-400">TITLE</label>
+          <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="bg-transparent border-b-2 border-white outline-none text-xl p-1 uppercase focus:border-green-400" placeholder="ENTER TITLE..." />
         </div>
-    );
+        <div className="flex flex-col flex-1 gap-1">
+          <label className="text-sm tracking-widest text-zinc-400">AUTHOR</label>
+          <input value={newAuthor} onChange={(e) => setNewAuthor(e.target.value)} className="bg-transparent border-b-2 border-white outline-none text-xl p-1 uppercase focus:border-green-400" placeholder="ENTER AUTHOR..." />
+        </div>
+        <div className="flex flex-col w-48 gap-1">
+          <label className="text-sm tracking-widest text-zinc-400">STATUS</label>
+          <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="bg-transparent border-b-2 border-white outline-none text-xl p-1 uppercase cursor-pointer text-white [&>option]:bg-blue-900 focus:border-green-400">
+            <option value="PLAN TO READ">PLAN TO READ</option>
+            <option value="READING">READING</option>
+            <option value="FINISHED">FINISHED</option>
+          </select>
+        </div>
+        <button type="submit" className="self-end bg-green-700 border-2 border-white px-6 py-2 text-xl hover:bg-green-500 active:bg-white active:text-black transition-colors tracking-widest">
+          ADD [+]
+        </button>
+      </form>
+
+      {/* DATA TABLE */}
+      {loading ? (
+        <p className="text-3xl animate-pulse">FETCHING DATA...</p>
+      ) : (
+        <div className="overflow-y-auto max-h-[40vh] border-2 border-white custom-scrollbar">
+          <table className="w-full text-xl bg-black/40 border-collapse">
+            <thead className="sticky top-0 bg-blue-900 border-b-2 border-white">
+              <tr>
+                <th className="border-r-2 border-white p-3 text-left">TITLE</th>
+                <th className="border-r-2 border-white p-3 text-left">AUTHOR</th>
+                <th className="border-r-2 border-white p-3 text-center">STATUS</th>
+                <th className="p-3 text-center w-32">ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {books.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-6 text-center text-zinc-400 tracking-widest">
+                    NO LOGS FOUND. AWAITING INPUT.
+                  </td>
+                </tr>
+              ) : (
+                books.map((book) => (
+                  <tr key={book._id} className="hover:bg-blue-800/50 transition-colors border-b border-white/20">
+                    <td className="border-r-2 border-white/20 p-3 uppercase">{book.title}</td>
+                    <td className="border-r-2 border-white/20 p-3 uppercase">{book.author}</td>
+                    <td className="border-r-2 border-white/20 p-3 text-center">
+                      <button 
+                        onClick={() => handleCycleStatus(book._id, book.status)}
+                        className={`px-3 py-1 text-sm border hover:bg-white hover:text-black transition-colors ${book.status === 'FINISHED' ? 'border-green-400 text-green-400' : book.status === 'READING' ? 'border-yellow-400 text-yellow-400' : 'border-zinc-400 text-zinc-400'}`}
+                      >
+                        [{book.status}]
+                      </button>
+                    </td>
+                    <td className="p-3 text-center flex justify-center gap-2">
+                      <button onClick={() => handleDelete(book._id)} className="text-red-400 hover:text-white hover:bg-red-600 px-2 py-1 border border-transparent hover:border-white transition-colors">
+                        DEL
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 }
