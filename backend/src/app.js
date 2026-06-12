@@ -11,7 +11,13 @@ app.use(express.json());
 
 //database connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('connected to mongodb 👌🏻'))
+    .then(() => {
+        console.log('connected to mongodb 👌🏻');
+        // Clean up the obsolete cached email index
+        mongoose.connection.db.collection('users').dropIndex('email_1')
+            .then(() => console.log('Obsolete email_1 index dropped successfully! 🎉'))
+            .catch(() => {}); // Ignore if the index doesn't exist
+    })
     .catch((err) => console.error('Database not connected 🤚🏻',err));
 
 //routes
