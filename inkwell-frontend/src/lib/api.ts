@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://inkwell-sj2a.onrender.com';
 
 export const api ={
     login: async(username: string, password: string) => {
