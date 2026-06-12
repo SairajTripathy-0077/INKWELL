@@ -10,9 +10,14 @@ interface Book {
   status: string;
 }
 
-export default function Dashboard({ token }: { token: string }) {
+export default function Dashboard({ token, onLogout }: { token: string; onLogout?: () => void }) {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Inside Dashboard component:
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
 
   // Form State
   const [newTitle, setNewTitle] = useState("");
@@ -22,7 +27,7 @@ export default function Dashboard({ token }: { token: string }) {
   // Fetch books on load (Memorized!)
   const fetchBooks = useCallback(async () => {
     try {
-      const res = await api.getBooks(token);
+      const res = await api.getBooks(token, debouncedQuery);
       if (res.success) {
         setBooks(res.data);
       }
@@ -31,13 +36,24 @@ export default function Dashboard({ token }: { token: string }) {
     } finally {
       setLoading(false);
     }
-  }, [token]); 
+  }, [token, debouncedQuery]); 
 
   useEffect(() => {
     (async () => {
       await fetchBooks();
     })();
   }, [fetchBooks]);
+
+  useEffect(() => {
+  // Set up a timer to update debouncedQuery after 400ms of inactivity
+  const handler = setTimeout(() => {
+    setDebouncedQuery(searchQuery);
+  }, 400);
+  // Clear timer if searchQuery changes before the 400ms is up (user is still typing)
+  return () => {
+    clearTimeout(handler);
+  };
+}, [searchQuery]);
 
   // --- NEW FEATURES ---
 
@@ -71,11 +87,36 @@ export default function Dashboard({ token }: { token: string }) {
 
   return (
     <div className="p-8 z-10 relative h-full flex flex-col font-sans">
-      <div className="flex justify-between items-end border-b-2 border-white pb-2 mb-6">
+      <div className="flex justify-between items-end border-b-2 border-white pb-2 mb-6 animate-pulse-subtle">
         <h1 className="text-4xl tracking-widest uppercase">INKWELL.EXE</h1>
-        <button onClick={() => window.location.reload()} className="bg-red-700 text-white px-4 py-1 font-bold border-2 border-white hover:bg-red-500 active:bg-white active:text-black">
+        <button 
+          onClick={onLogout || (() => window.location.reload())} 
+          className="bg-red-700 text-white px-4 py-1 font-bold border-2 border-white hover:bg-red-500 active:bg-white active:text-black cursor-pointer"
+        >
           LOGOUT
         </button>
+      </div>
+
+      {/* SEARCH PANEL */}
+      <div className="flex gap-4 mb-6 bg-black/40 p-4 border-2 border-zinc-500 items-end">
+        <div className="flex flex-col flex-1 gap-1">
+          <label className="text-sm tracking-widest text-zinc-400">SEARCH DATABASE</label>
+          <input 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            className="bg-transparent border-b-2 border-white outline-none text-xl p-1 uppercase focus:border-green-400 font-mono" 
+            placeholder="SEARCH BY TITLE OR AUTHOR..." 
+          />
+        </div>
+        {searchQuery && (
+          <button 
+            type="button"
+            onClick={() => setSearchQuery("")} 
+            className="bg-zinc-800 border-2 border-white px-4 py-1.5 text-lg hover:bg-zinc-600 active:bg-white active:text-black transition-colors tracking-widest cursor-pointer"
+          >
+            CLEAR [X]
+          </button>
+        )}
       </div>
 
       {/* NEW ENTRY FORM */}

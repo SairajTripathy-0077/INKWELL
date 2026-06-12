@@ -19,7 +19,20 @@ exports.createBook = async(req , res) => {
 
 exports.getAllBook = async(req, res) => {
     try {
-        const books = await Book.find(req.query);
+        let queryObj = {user: req.user.id};
+        if(req.query.search){
+            queryObj.$or = [
+                {title: {
+                    $regex: req.query.search,
+                    $options: 'i'
+                }},
+                {author: {
+                    $regex: req.query.search,
+                    $options: 'i'
+                }}
+            ];
+        }
+        const books = await Book.find(queryObj);
 
         res.status(200).json({
             success: true,

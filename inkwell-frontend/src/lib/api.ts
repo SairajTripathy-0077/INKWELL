@@ -1,3 +1,5 @@
+import { Search } from "lucide-react";
+
 const API_URL = 'http://localhost:3000';
 
 export const api ={
@@ -10,8 +12,11 @@ export const api ={
         return res.json();
     },
 
-    getBooks: async(token: string) => {
-        const res = await fetch(`${API_URL}/books`, {
+    getBooks: async(token: string, search?: string) => {
+        const url = search
+        ? `${API_URL}/books?search=${encodeURIComponent(search)}`
+        : `${API_URL}/books`;
+        const res = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         return res.json();
