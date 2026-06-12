@@ -57,5 +57,9 @@ export const api ={
         body: JSON.stringify({ status })
         });
         return res.json();
+    },
+    healthCheck: async () => {
+        const res = await fetch(`${API_URL}/health`);
+        return res.json();
     }
 }

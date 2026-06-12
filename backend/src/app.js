@@ -24,6 +24,11 @@ app.use('/books', bookRoutes);
 const { getInsight } = require('../src/controllers/bookController');
 app.get('/insights', getInsight);
 
+// health check
+app.get('/health', (req, res) => {
+    res.status(200).json({ success: true, message: 'Inkwell API is online' });
+});
+
 //global error handler
 app.use((err, req, res,next) => {
     console.error(err.stack);
